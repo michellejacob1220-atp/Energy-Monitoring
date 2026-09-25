@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Electricity Monitoring Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: #111827;
+      --border-color: #374151;
+      --primary: #2563EB;
+      --primary-accent: #38BDF8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --text-main: #F9FAFB;
+      --text-muted: #9CA3AF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    aside {
+      width: 250px;
+      background-color: var(--bg-card);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary-accent);
+      margin-bottom: 28px;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .nav-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background-color: var(--primary);
+      color: #fff;
+    }
+
+    .system-status {
+      margin-top: auto;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.8rem;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-right: 6px;
+    }
+
+    /* Main Content Area */
+    main {
+      flex: 1;
+      padding: 28px 36px;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .badge-bar {
+      display: flex;
+      gap: 10px;
+    }
+
+    .badge {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Tab Panels */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+
+    .alert-title {
+      font-weight: 600;
+      color: #FCA5A5;
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+
+    .alert-desc {
+      font-size: 0.85rem;
+      color: #E5E7EB;
+    }
+
+    /* Metric Grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .metric-val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-sub {
+      font-size: 0.8rem;
+      margin-top: 6px;
+      color: var(--text-muted);
+    }
+
+    .val-green { color: var(--success); }
+    .val-amber { color: var(--warning); }
+    .val-red { color: var(--danger); }
+
+    /* Visual Analytics Layout */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .chart-box {
+      width: 100%;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .axis-label {
+      fill: var(--text-muted);
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Subsystem Bars */
+    .subsystem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .subsystem-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .subsystem-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #1F2937;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+
+    th {
+      color: var(--text-muted);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 500;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar Navigation -->
+  <aside>
+    <div class="brand">⚡ OptiWatt IoT</div>
+    <ul class="nav-list">
+      <li class="nav-item active" onclick="switchTab('live-monitoring')">Live Monitoring</li>
+      <li class="nav-item" onclick="switchTab('sensor-streams')">Sensor Streams</li>
+      <li class="nav-item" onclick="switchTab('consumption-trends')">Consumption Trends</li>
+      <li class="nav-item" onclick="switchTab('log-records')">Energy Log Records</li>
+      <li class="nav-item" onclick="switchTab('iso-audit')">ISO 14001 Audit</li>
+    </ul>
+
+    <div class="system-status">
+      <div><span class="status-dot"></span><strong>ESP32 Gateway Active</strong></div>
+      <div style="color: var(--text-muted); margin-top: 4px;">Protocol: MQTT / TLS</div>
+      <div style="color: var(--text-muted); margin-top: 4px;">Sub-Nodes: 4 Online</div>
+    </div>
+  </aside>
+
+  <!-- Main Work Area -->
+  <main>
+    <header>
+      <div>
+        <h1 id="page-title">Smart Electricity Monitoring Dashboard</h1>
+        <p id="page-sub" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 2px;">
+          Sub-Circuit Telemetry, Load Patterns & Anomaly Detection
+        </p>
+      </div>
+      <div class="badge-bar">
+        <span class="badge">Block B - Lab Wing</span>
+        <span class="badge">Node: ESP32-WROOM</span>
+      </div>
+    </header>
+
+    <!-- TAB 1: LIVE MONITORING -->
+    <div id="live-monitoring" class="tab-content active">
+      <div class="alert-banner">
+        <div class="alert-title">⚠ High Baseline Anomaly Flagged</div>
+        <div class="alert-desc">
+          Continuous power draw of <strong>4.82 kW</strong> detected in <em>Microprocessor Lab (Room 204)</em> during inactive hours (12:30 AM – 4:00 AM). High probability of unmonitored idle equipment.
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="card">
+          <div class="card-header">ACTIVE POWER DEMAND</div>
+          <div class="metric-val">18.42 kW</div>
+          <div class="metric-sub val-green">Live Active Load</div>
+        </div>
+        <div class="card">
+          <div class="card-header">MAINS VOLTAGE & CURRENT</div>
+          <div class="metric-val">231.4 V / 79.6 A</div>
+          <div class="metric-sub">PF: 0.96 (Stable)</div>
+        </div>
+        <div class="card">
+          <div class="card-header">DAILY CONSUMPTION</div>
+          <div class="metric-val">142.8 kWh</div>
+          <div class="metric-sub val-amber">Target Cap: 160 kWh</div>
+        </div>
+        <div class="card">
+          <div class="card-header">ESTIMATED CARBON EMISSIONS</div>
+          <div class="metric-val val-amber">117.1 kg</div>
+          <div class="metric-sub">Scope 2 Grid Footprint</div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header">
+            <span>MEASURED LOAD VS. HISTORICAL BASELINE (24 HOURS)</span>
+            <span style="color: var(--primary-accent); font-weight: normal;">Live Sensor Feed</span>
+          </div>
+          <div class="chart-box">
+            <svg viewBox="0 0 500 200">
+              <line x1="40" y1="20" x2="480" y2="20" stroke="#1F2937" stroke-width="1" />
+              <line x1="40" y1="70" x2="480" y2="70" stroke="#1F2937" stroke-width="1" />
+              <line x1="40" y1="120" x2="480" y2="120" stroke="#1F2937" stroke-width="1" />
+              <line x1="40" y1="170" x2="480" y2="170" stroke="#374151" stroke-width="1" />
+              <text x="5" y="25" class="axis-label">25 kW</text>
+              <text x="5" y="75" class="axis-label">18 kW</text>
+              <text x="5" y="125" class="axis-label">10 kW</text>
+              <text x="5" y="175" class="axis-label">0 kW</text>
+              <polyline fill="none" stroke="#9CA3AF" stroke-width="2" stroke-dasharray="5,5"
+                points="40,140 100,145 160,135 220,60 280,45 340,55 400,105 480,135" />
+              <polyline fill="none" stroke="#38BDF8" stroke-width="3"
+                points="40,130 100,135 160,120 220,40 280,25 340,35 400,85 480,125" />
+              <text x="40" y="195" class="axis-label">00:00</text>
+              <text x="160" y="195" class="axis-label">06:00</text>
+              <text x="280" y="195" class="axis-label">12:00</text>
+              <text x="400" y="195" class="axis-label">18:00</text>
+              <text x="460" y="195" class="axis-label">23:59</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">CONSUMPTION BY SUBSYSTEM</div>
+          <div class="subsystem-list">
+            <div class="subsystem-item">
+              <div class="subsystem-header"><span>HVAC & Air Conditioning</span><strong>48% (8.84 kW)</strong></div>
+              <div class="bar-bg"><div class="bar-fill" style="width: 48%; background: var(--primary);"></div></div>
+            </div>
+            <div class="subsystem-item">
+              <div class="subsystem-header"><span>Lab Workstations</span><strong>30% (5.52 kW)</strong></div>
+              <div class="bar-bg"><div class="bar-fill" style="width: 30%; background: var(--primary-accent);"></div></div>
+            </div>
+            <div class="subsystem-item">
+              <div class="subsystem-header"><span>Lighting Systems</span><strong>14% (2.58 kW)</strong></div>
+              <div class="bar-bg"><div class="bar-fill" style="width: 14%; background: var(--success);"></div></div>
+            </div>
+            <div class="subsystem-item">
+              <div class="subsystem-header"><span>Phantom / Standby Load</span><strong>8% (1.48 kW)</strong></div>
+              <div class="bar-bg"><div class="bar-fill" style="width: 8%; background: var(--warning);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">SUB-CIRCUIT MONITORED ZONES (ESP32 TELEMETRY STREAM)</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Zone / Room</th>
+              <th>Connected Circuit</th>
+              <th>Voltage (V)</th>
+              <th>Current (A)</th>
+              <th>Active Power (kW)</th>
+              <th>Operating State</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">Room 201 - Data Structures Lab</td>
+              <td>Workstations & AC Unit 1</td>
+              <td>230.8</td>
+              <td>24.3</td>
+              <td>5.61</td>
+              <td><span class="badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">● Normal Load</span></td>
+            </tr>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">Room 204 - Microprocessor Lab</td>
+              <td>8086 Trainers, HVAC, Projector</td>
+              <td>229.5</td>
+              <td>21.0</td>
+              <td>4.82</td>
+              <td><span class="badge-pill" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;">● High Anomaly</span></td>
+            </tr>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">Block B - Corridor & Lighting</td>
+              <td>LED Luminaire Matrix</td>
+              <td>232.1</td>
+              <td>8.4</td>
+              <td>1.95</td>
+              <td><span class="badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">● Normal Load</span></td>
+            </tr>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">Server / Network Rack B2</td>
+              <td>Managed PoE Switches, UPS Banks</td>
+              <td>231.2</td>
+              <td>26.1</td>
+              <td>6.04</td>
+              <td><span class="badge-pill" style="background: rgba(56, 189, 248, 0.2); color: #38BDF8;">● Continuous Steady</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: SENSOR STREAMS -->
+    <div id="sensor-streams" class="tab-content">
+      <div class="card">
+        <div class="card-header">CONNECTED IOT HARDWARE SENSORS</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+          Telemetry streaming from non-invasive split-core Current Transformers (CT) and PZEM-004T modules via ESP32 microcontrollers.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Sensor Node ID</th>
+              <th>Sensor Hardware</th>
+              <th>Target Sub-Panel</th>
+              <th>Sample Rate</th>
+              <th>Signal Quality (RSSI)</th>
+              <th>Bus Protocol</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: #fff;">ESP32-NODE-01</td>
+              <td>SCT-013-000 (100A CT)</td>
+              <td>Panel 2A - Lab Computing</td>
+              <td>1 reading / 2 sec</td>
+              <td class="val-green">-58 dBm (Excellent)</td>
+              <td>MQTT / Wi-Fi</td>
+            </tr>
+            <tr>
+              <td style="color: #fff;">ESP32-NODE-02</td>
+              <td>PZEM-004T AC Sensor</td>
+              <td>Panel 2B - HVAC Inverter Unit</td>
+              <td>1 reading / 1 sec</td>
+              <td class="val-green">-64 dBm (Good)</td>
+              <td>MQTT / Wi-Fi</td>
+            </tr>
+            <tr>
+              <td style="color: #fff;">ESP32-NODE-03</td>
+              <td>SCT-013-030 (30A CT)</td>
+              <td>Panel 2C - Lighting Matrix</td>
+              <td>1 reading / 5 sec</td>
+              <td class="val-amber">-78 dBm (Fair)</td>
+              <td>HTTP POST</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: CONSUMPTION TRENDS -->
+    <div id="consumption-trends" class="tab-content">
+      <div class="metric-grid">
+        <div class="card">
+          <div class="card-header">WEEKLY TOTAL LOAD</div>
+          <div class="metric-val">1,024 kWh</div>
+          <div class="metric-sub val-green">▼ 8.2% vs previous week</div>
+        </div>
+        <div class="card">
+          <div class="card-header">PEAK DEMAND RECORD</div>
+          <div class="metric-val">24.8 kW</div>
+          <div class="metric-sub">Recorded at 12:45 PM</div>
+        </div>
+        <div class="card">
+          <div class="card-header">OFF-PEAK BASELOAD</div>
+          <div class="metric-val">5.8 kW</div>
+          <div class="metric-sub val-amber">Includes unmonitored lab load</div>
+        </div>
+        <div class="card">
+          <div class="card-header">SDG 7 EFFICIENCY INDEX</div>
+          <div class="metric-val val-green">88.4 / 100</div>
+          <div class="metric-sub">Energy efficiency rating</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ENERGY LOG RECORDS -->
+    <div id="log-records" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <span>CENTRAL TELEMETRY DATABASE RECORDS</span>
+          <span style="color: var(--primary-accent); font-weight: normal;">Schema: High Electricity Technical Report</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Device ID</th>
+              <th>Timestamp</th>
+              <th>Voltage (V)</th>
+              <th>Current (A)</th>
+              <th>Power (kW)</th>
+              <th>Energy (kWh)</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: #fff;">DEV_ESP32_01</td>
+              <td>2026-09-22 17:15:00</td>
+              <td>231.4</td>
+              <td>24.2</td>
+              <td>5.60</td>
+              <td>142.8</td>
+              <td>Room 201 (DS Lab)</td>
+            </tr>
+            <tr>
+              <td style="color: #fff;">DEV_ESP32_02</td>
+              <td>2026-09-22 17:15:00</td>
+              <td>229.5</td>
+              <td>21.0</td>
+              <td>4.82</td>
+              <td>118.4</td>
+              <td>Room 204 (MP Lab)</td>
+            </tr>
+            <tr>
+              <td style="color: #fff;">DEV_ESP32_03</td>
+              <td>2026-09-22 17:15:00</td>
+              <td>232.1</td>
+              <td>8.4</td>
+              <td>1.95</td>
+              <td>42.1</td>
+              <td>Block B Corridor</td>
+            </tr>
+            <tr>
+              <td style="color: #fff;">DEV_ESP32_04</td>
+              <td>2026-09-22 17:15:00</td>
+              <td>231.2</td>
+              <td>26.1</td>
+              <td>6.04</td>
+              <td>160.2</td>
+              <td>Server Rack B2</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 5: ISO 14001 AUDIT -->
+    <div id="iso-audit" class="tab-content">
+      <div class="card">
+        <div class="card-header">ISO 14001 ENVIRONMENTAL MANAGEMENT SYSTEM COMPLIANCE</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
+          Adhering to the Plan-Do-Check-Act continual improvement framework for institutional energy monitoring.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Process Requirement</th>
+              <th>Implementation Status</th>
+              <th>Audit Finding</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">PLAN</td>
+              <td>Set baseline consumption targets</td>
+              <td><span class="badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">Complete</span></td>
+              <td>Target cap set at 160 kWh/day</td>
+            </tr>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">DO</td>
+              <td>Deploy IoT sub-meter telemetry</td>
+              <td><span class="badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">Operational</span></td>
+              <td>4 ESP32 active nodes reporting</td>
+            </tr>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">CHECK</td>
+              <td>Identify unnecessary baseload waste</td>
+              <td><span class="badge-pill" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B;">Active</span></td>
+              <td>Room 204 anomaly flagged for inspection</td>
+            </tr>
+            <tr>
+              <td style="color: #fff; font-weight: 500;">ACT</td>
+              <td>Continuous improvement review</td>
+              <td><span class="badge-pill" style="background: rgba(56, 189, 248, 0.2); color: #38BDF8;">Scheduled</span></td>
+              <td>Facility committee evaluation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      // 1. Hide all tab content panes
+      const tabContents = document.querySelectorAll('.tab-content');
+      tabContents.forEach(el => el.classList.remove('active'));
+
+      // 2. Remove active state from sidebar items
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(el => el.classList.remove('active'));
+
+      // 3. Show selected tab pane
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) {
+        targetPane.classList.add('active');
+      }
+
+      // 4. Highlight clicked sidebar item
+      event.currentTarget.classList.add('active');
+
+      // 5. Update header text dynamically
+      const title = document.getElementById('page-title');
+      const subtitle = document.getElementById('page-sub');
+
+      if (tabId === 'live-monitoring') {
+        title.innerText = 'Smart Electricity Monitoring Dashboard';
+        subtitle.innerText = 'Sub-Circuit Telemetry, Load Patterns & Anomaly Detection';
+      } else if (tabId === 'sensor-streams') {
+        title.innerText = 'IoT Sensor Telemetry Streams';
+        subtitle.innerText = 'Live Hardware Telemetry via ESP32 Microcontrollers';
+      } else if (tabId === 'consumption-trends') {
+        title.innerText = 'Historical Electricity Trends';
+        subtitle.innerText = 'Long-Term Load Analytics & Efficiency Tracking';
+      } else if (tabId === 'log-records') {
+        title.innerText = 'Central Database Telemetry Logs';
+        subtitle.innerText = 'Raw Recorded Electrical Parameters Schema';
+      } else if (tabId === 'iso-audit') {
+        title.innerText = 'ISO 14001 Environmental Audit';
+        subtitle.innerText = 'Plan-Do-Check-Act Continual Improvement Framework';
+      }
+    }
+  </script>
+</body>
+</html>
